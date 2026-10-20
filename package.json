@@ -1,0 +1,19 @@
+{
+  "name": "spectracanvas",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Paint a spectrogram. Hear your drawing.",
+  "license": "GPL-3.0-or-later",
+  "repository": "github:gdamdam/spectracanvas",
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "node server.mjs",
+    "test": "node --test test/*.test.js",
+    "check": "node --check src/app.js && node --check src/dsp.js && node --check src/project.js && node --check src/render-worker.js && node --check server.mjs && node scripts/stamp-version.mjs --check",
+    "version": "node scripts/stamp-version.mjs && git add index.html"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

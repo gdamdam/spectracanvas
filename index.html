@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b0e11">
+  <meta name="description" content="Paint a spectrogram and hear it. A free browser tool that turns drawings and images into sound and exports WAV files. Runs entirely on your device.">
+  <title>SpectraCanvas – Paint a spectrogram, hear the drawing</title>
+  <link rel="canonical" href="https://gdamdam.github.io/spectracanvas/">
+  <meta name="robots" content="index, follow">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="SpectraCanvas – Paint a spectrogram, hear the drawing">
+  <meta property="og:description" content="Free browser tool that turns drawings and images into sound. Draw on a spectrogram, listen, export WAV.">
+  <meta property="og:url" content="https://gdamdam.github.io/spectracanvas/">
+  <meta property="og:image" content="https://gdamdam.github.io/spectracanvas/docs/screenshot.png">
+  <meta property="og:image:alt" content="SpectraCanvas editor showing a drawn spectrogram and the measured audio spectrum below it">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "SpectraCanvas",
+    "url": "https://gdamdam.github.io/spectracanvas/",
+    "description": "Paint a spectrogram and hear it. Turns drawings and images into sound and exports WAV files, entirely in the browser.",
+    "applicationCategory": "MultimediaApplication",
+    "operatingSystem": "Any",
+    "browserRequirements": "Requires JavaScript and Web Audio",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "license": "https://www.gnu.org/licenses/gpl-3.0.html",
+    "codeRepository": "https://github.com/gdamdam/spectracanvas",
+    "screenshot": "https://gdamdam.github.io/spectracanvas/docs/screenshot.png"
+  }
+  </script>
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css?v=1.0.0">
+  <script type="module" src="./src/app.js?v=1.0.0"></script>
+</head>
+<body>
+  <svg class="symbols" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="m8 5 11 7-11 7Z"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V3m-5 5 5-5 5 5M4 15v5h16v-5"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v13m-5-5 5 5 5-5M4 16v5h16v-5"/></symbol>
+    <symbol id="i-undo" viewBox="0 0 24 24"><path d="m8 4-5 5 5 5M3 9h10a7 7 0 0 1 0 14"/></symbol>
+    <symbol id="i-redo" viewBox="0 0 24 24"><path d="m16 4 5 5-5 5m5-5H11a7 7 0 0 0 0 14"/></symbol>
+    <symbol id="i-pencil" viewBox="0 0 24 24"><path d="m4 16 12-12 4 4L8 20H4Zm10-10 4 4"/></symbol>
+    <symbol id="i-erase" viewBox="0 0 24 24"><path d="m3 14 11-11 7 7-10 10H9Zm5-5 7 7m-4 4h10"/></symbol>
+  </defs></svg>
+
+  <header class="app-header">
+    <h1>SpectraCanvas</h1>
+    <span class="app-description">Spectrogram editor</span>
+    <button id="help-toggle" class="text-button" aria-expanded="false" aria-controls="help">Help</button>
+  </header>
+
+  <main>
+    <section id="help" class="help" hidden>
+      <div><strong>Across = time</strong><p>A moving playhead reads your drawing from left to right.</p></div>
+      <div><strong>Up = higher pitch</strong><p>Horizontal lines hold a pitch. Curves make glides. Stacked lines sound together.</p></div>
+      <div><strong>Brighter = stronger</strong><p>Soft strokes make quieter layers. Wide strokes add more nearby frequencies.</p></div>
+      <p class="help-note">The drawing defines a target spectrum. The result below measures the synthesized audio; fine details blur with time and frequency resolution. A picture’s shape makes the sound—it doesn’t imitate the object pictured.</p>
+    </section>
+
+    <div class="studio">
+      <section class="editor" aria-label="Spectrogram editor">
+        <div class="transport">
+          <div class="transport-left"><button id="play" class="button play-button"><svg aria-hidden="true"><use href="#i-play"/></svg><span id="play-label">Play</span></button><div class="time-readout"><span id="position">0:00.0</span><span class="time-divider"> / </span><span id="total-time">0:06.0</span></div><span class="keyboard-hint">Space</span></div>
+          <button id="export" class="button secondary"><svg aria-hidden="true"><use href="#i-download"/></svg>Export WAV</button>
+        </div>
+        <div class="waveform-row"><span class="small-label">Waveform</span><canvas id="waveform" width="768" height="42" role="img" aria-label="Waveform of the rendered sound"></canvas></div>
+
+        <div class="panel-heading"><h2>Drawing <span class="axis-unit">Hz</span></h2><span id="coordinate" class="coordinate">Time → · Frequency ↑</span></div>
+        <div class="toolbar">
+          <div class="tool-group" role="group" aria-label="Drawing tool"><button class="tool active" id="draw-tool" aria-pressed="true" title="Draw (B)"><svg aria-hidden="true"><use href="#i-pencil"/></svg>Draw</button><button class="tool" id="erase-tool" aria-pressed="false" title="Erase (E)"><svg aria-hidden="true"><use href="#i-erase"/></svg>Erase</button></div>
+          <span class="toolbar-divider"></span>
+          <button class="icon-button" id="undo" aria-label="Undo" title="Undo (⌘/Ctrl Z)" disabled><svg aria-hidden="true"><use href="#i-undo"/></svg></button>
+          <button class="icon-button" id="redo" aria-label="Redo" title="Redo (⌘/Ctrl Shift Z)" disabled><svg aria-hidden="true"><use href="#i-redo"/></svg></button>
+          <div class="toolbar-right"><button class="text-button" id="import">Import image</button><button class="text-button" id="save-image">Save image</button><button class="text-button" id="clear">Clear</button></div>
+          <input id="image-file" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" hidden>
+        </div>
+
+        <div class="plot-layout">
+          <div class="frequency-axis" id="draw-axis" aria-hidden="true"></div>
+          <div class="plot drawing-plot" id="drawing-plot"><canvas id="drawing" width="384" height="128" tabindex="0" aria-label="Draw sound here. Use the mouse or touch to paint. With keyboard focus, arrow keys move and Shift plus arrow keys paints. B selects draw; E selects erase." aria-describedby="canvas-help"></canvas><div class="plot-grid" aria-hidden="true"></div><div class="playhead" id="draw-head" hidden></div><div class="brush-cursor" id="brush-cursor" hidden></div></div>
+          <div></div><div class="time-axis" id="draw-times" aria-hidden="true"></div>
+        </div>
+        <span id="canvas-help" class="sr-only">Drag to draw. Higher marks = higher notes. Brighter marks = louder.</span>
+
+        <div class="result-divider"></div>
+        <div class="panel-heading"><div><h2>Audio spectrum</h2><span id="result-badge" class="result-badge">Not rendered</span></div><button class="text-button" id="render">Render</button></div>
+        <div class="plot-layout result-layout">
+          <div class="frequency-axis" id="result-axis" aria-hidden="true"></div>
+          <div class="plot result-plot"><canvas id="result" width="384" height="128" role="img" aria-label="Actual spectrogram measured from the synthesized audio"></canvas><div class="plot-grid" aria-hidden="true"></div><div class="playhead" id="result-head" hidden></div><span class="result-empty" id="result-empty">No audio rendered</span></div>
+          <div></div><div class="time-axis" id="result-times" aria-hidden="true"></div>
+        </div>
+        <div class="result-caption"><span>44.1 kHz · mono · log frequency</span><div class="legend"><span>−60</span><span class="legend-gradient"></span><span>0 dB</span></div></div>
+        <div class="status-bar"><span id="status" role="status" aria-live="polite">Ready to draw.</span><span id="save-status">Autosave on</span></div>
+        <progress id="render-progress" max="1" value="0" aria-label="Audio rendering progress" hidden></progress>
+      </section>
+
+      <aside class="sidebar" aria-label="Sound and brush settings">
+        <section class="settings-section"><h2>Brush</h2>
+          <label for="brush">Size <output id="brush-value">3 px</output></label><input id="brush" type="range" min="1" max="12" value="3">
+          <label for="strength">Strength <output id="strength-value">85%</output></label><input id="strength" type="range" min="5" max="100" value="85">
+        </section>
+        <section class="settings-section"><h2>Sound</h2>
+          <label for="duration">Duration <output id="duration-value">6.0 s</output></label><input id="duration" type="range" min="1" max="12" step="0.5" value="6">
+          <div class="frequency-fields"><label for="low">Lowest<select id="low"><option value="40">40 Hz</option><option value="80" selected>80 Hz</option><option value="160">160 Hz</option><option value="300">300 Hz</option></select></label><label for="high">Highest<select id="high"><option value="3000">3 kHz</option><option value="6000" selected>6 kHz</option><option value="12000">12 kHz</option><option value="16000">16 kHz</option></select></label></div>
+          <label for="volume">Volume <output id="volume-value">25%</output></label><input id="volume" type="range" min="0" max="100" value="25">
+          <p class="control-note">Playback level only. WAV export is normalized.</p>
+        </section>
+        <section class="settings-section examples"><h2>Examples</h2>
+          <div class="example-list"><button data-example="spiral" class="example">Spiral</button><button data-example="glide" class="example">Glides</button><button data-example="chord" class="example">Chord</button></div>
+          <p class="control-note">Replaces drawing. Undo to restore.</p>
+        </section>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="app-footer">
+    <p>SpectraCanvas is a free, open-source spectrogram painter. Draw lines and shapes, or import an image, and hear it as sound: across is time, up is pitch, brighter is louder. Everything runs in your browser and nothing is uploaded.</p>
+    <p><a href="https://github.com/gdamdam/spectracanvas">Source code on GitHub</a> · GPL-3.0 license</p>
+    <noscript><p>SpectraCanvas needs JavaScript and Web Audio to draw and play sound.</p></noscript>
+  </footer>
+</body>
+</html>
