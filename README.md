@@ -53,6 +53,10 @@ npm run check   # syntax and version check
 
 Pushes to `main` deploy to GitHub Pages. To refresh the screenshot, run the app and `node scripts/screenshot.mjs`.
 
+## How it's built
+
+SpectraCanvas is a free, non-commercial project, built for fun. It was developed with AI coding tools; every change was designed, reviewed and tested by a human.
+
 ## License
 
 GPL-3.0-or-later. See [LICENSE](LICENSE).
